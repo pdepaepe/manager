@@ -1,7 +1,6 @@
-import angular from 'angular';
-
 import managerCore from '@ovh-ux/manager-core';
 import uiRouterAngularJs from '@uirouter/angularjs';
+import angular from 'angular';
 import oclazyload from 'oclazyload';
 
 import { state } from './support.routing';

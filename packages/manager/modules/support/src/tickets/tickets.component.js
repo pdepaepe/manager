@@ -1,15 +1,14 @@
-import controller from './tickets.controller';
 import template from './tickets.html';
 
 export default {
   bindings: {
+    goToNew: '<',
     goToTicket: '<',
     gridColumnLastMessageFromTypeOptions: '<',
     gridColumnStateTypeOptions: '<',
     reload: '<',
     tickets: '<',
   },
-  controller,
   name: 'supportTickets',
   template,
 };

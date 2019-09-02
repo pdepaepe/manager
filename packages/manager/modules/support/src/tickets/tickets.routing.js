@@ -10,6 +10,8 @@ export const state = {
     },
   },
   resolve: {
+    goToNew: /* @ngInject */ $state => () => $state
+      .go('support.tickets.new'),
     goToTicket: /* @ngInject */ $state => id => $state
       .go('support.tickets.ticket', { id }),
     gridColumnLastMessageFromTypeOptions: /* @ngInject */ ticketsService => ticketsService

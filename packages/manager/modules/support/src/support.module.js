@@ -1,8 +1,7 @@
-import angular from 'angular';
-
 import ngTranslateAsyncLoader from '@ovh-ux/ng-translate-async-loader';
 import uiRouter from '@uirouter/angularjs';
 import angularTranslate from 'angular-translate';
+import angular from 'angular';
 import 'ovh-ui-angular';
 
 import tickets from './tickets';

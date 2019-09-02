@@ -1,11 +1,10 @@
-import angular from 'angular';
-
-import ngOvhOtrs from '@ovh-ux/ng-ovh-otrs';
 import ngTranslateAsyncLoader from '@ovh-ux/ng-translate-async-loader';
 import uiRouter from '@uirouter/angularjs';
+import angular from 'angular';
 import angularTranslate from 'angular-translate';
 import 'ovh-ui-angular';
 
+import newTicket from './new';
 import ticket from './ticket';
 
 import component from './tickets.component';
@@ -21,7 +20,7 @@ const moduleName = 'ovhManagerSupportTickets';
 angular
   .module(moduleName, [
     angularTranslate,
-    ngOvhOtrs,
+    newTicket,
     ngTranslateAsyncLoader,
     'oui',
     ticket,
