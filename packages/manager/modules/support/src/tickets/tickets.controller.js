@@ -8,7 +8,6 @@ import head from 'lodash/head';
 import includes from 'lodash/includes';
 import isEqual from 'lodash/isEqual';
 import isEmpty from 'lodash/isEmpty';
-import isFinite from 'lodash/isFinite';
 import lowerCase from 'lodash/lowerCase';
 import map from 'lodash/map';
 import orderBy from 'lodash/orderBy';
@@ -24,6 +23,7 @@ import moment from 'moment';
 export default class SupportController {
   /* @ngInject */
   constructor(
+    $filter,
     $q,
     $rootScope,
     $state,
@@ -31,6 +31,7 @@ export default class SupportController {
     OtrsPopupService,
     ouiDatagridService,
   ) {
+    this.$filter = $filter;
     this.$q = $q;
     this.$rootScope = $rootScope;
     this.$state = $state;
@@ -48,7 +49,11 @@ export default class SupportController {
         );
 
         const translationId = `ovhManagerSupport_ticket_${propertyName}_${criterion.value}`;
-        const value = this.$translate.instant(translationId);
+        const translatedValue = this.$translate.instant(translationId);
+
+        const value = moment(criterion.value, 'YYYY-MM-DD', true).isValid()
+          ? this.$filter('date')(criterion.value, 'shortDate')
+          : translatedValue;
 
         return {
           ...criterion,
@@ -84,13 +89,6 @@ export default class SupportController {
 
   openSupport() {
     this.goToTicketCreation();
-    /*
-    if (!this.OtrsPopupService.isLoaded()) {
-      this.OtrsPopupService.init();
-    } else {
-      this.OtrsPopupService.toggle();
-    }
-    */
   }
 
   getTickets() {
@@ -140,39 +138,36 @@ export default class SupportController {
   }
 
   static match(a, operator, b) {
-    const aValue = isFinite(
-      toNumber(a),
-    )
-      ? a
-      : lowerCase(toString(a));
-
-    const bValue = isFinite(
-      toNumber(b),
-    )
-      ? b
-      : lowerCase(toString(b));
+    const aDate = moment(a);
+    const aNumber = toNumber(a);
+    const aString = lowerCase(toString(a));
+    const bDate = moment(b);
+    const bNumber = toNumber(b);
+    const bString = lowerCase(toString(b));
 
     switch (operator) {
       case 'bigger':
-        return aValue > bValue;
+        return aNumber > bNumber;
       case 'contains':
-        return includes(aValue, bValue);
+        return includes(aString, bString);
       case 'containsNot':
-        return !includes(aValue, bValue);
+        return !includes(aString, bString);
       case 'endsWith':
-        return endsWith(aValue, bValue);
+        return endsWith(aString, bString);
       case 'is':
-        return isEqual(aValue, bValue);
+        return isEqual(aString, bString)
+          || aDate.isSame(bDate, 'day');
       case 'isAfter':
-        return moment(a).add(1, 'days').isAfter(moment(b));
+        return aDate.isAfter(bDate, 'day');
       case 'isBefore':
-        return moment(a).isBefore(moment(b));
+        return aDate.isBefore(bDate, 'day');
       case 'isNot':
-        return !isEqual(aValue, bValue);
+        return !isEqual(aString, bString)
+        || !aDate.isSame(bDate, 'day');
       case 'smaller':
-        return aValue < bValue;
+        return aNumber < bNumber;
       case 'startsWith':
-        return startsWith(aValue, bValue);
+        return startsWith(aString, bString);
       default:
         return null;
     }
@@ -185,7 +180,9 @@ export default class SupportController {
         $criteria,
         (criterion) => {
           const clone = cloneDeep(criterion);
+          delete clone.rawValue;
           delete clone.title;
+
           return {
             ...clone,
             value: criterion.rawValue || criterion.value,
