@@ -65,8 +65,9 @@ export const state = {
       .params().sortBy,
     sortOrder: /* @ngInject */ $transition$ => $transition$
       .params().sortOrder,
-    tickets: /* @ngInject */ ($transition$, ticketService) => $transition$
-      .params().tickets || ticketService.query($transition$.params()),
+    // tickets: /* @ngInject */ ($transition$, ticketService) => $transition$
+    //   .params().tickets || ticketService.query($transition$.params()),
+    tickets: () => [],
   },
   url: '/tickets?filters&pageNumber&pageSize&sortBy&sortOrder',
   views: {

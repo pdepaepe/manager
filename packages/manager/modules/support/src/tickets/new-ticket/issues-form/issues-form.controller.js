@@ -1,189 +1,99 @@
-import filter from 'lodash/filter';
-import get from 'lodash/get';
-import isString from 'lodash/isString';
-import orderBy from 'lodash/orderBy';
-
-const CATEGORY_ACCOUNT = 'account';
+import isArray from 'lodash/isArray';
+import isObject from 'lodash/isObject';
 
 export default class SupportNewIssuesFormController {
   /* @ngInject */
   constructor(
     $q,
-    $state,
     $translate,
     atInternet,
     OvhApiService,
     OvhApiSupport,
-    OvhApiMe,
     SupportNewTicketService,
   ) {
     this.$q = $q;
-    this.$state = $state;
     this.$translate = $translate;
     this.atInternet = atInternet;
     this.OvhApiService = OvhApiService;
     this.OvhApiSupport = OvhApiSupport;
-    this.OvhApiMe = OvhApiMe;
     this.SupportNewTicketService = SupportNewTicketService;
-    this.CATEGORY_ACCOUNT = CATEGORY_ACCOUNT;
   }
 
   $onInit() {
-    this.defaultServiceTypeName = isString(this.serviceTypeName)
-      ? this.serviceTypeName.toLowerCase()
-      : null;
+    this.props = {
+      categoryName: this.propsCategoryName,
+      serviceName: this.propsServiceName,
+      serviceTypeName: this.propsServiceTypeName,
+    };
 
-    this.currentServiceName = null;
-    this.categories = null;
-    this.category = null;
-    this.issue = null;
-    this.issueParams = {};
-    this.isLoading = true;
-    return this.$q.all({
-      categories: this.SupportNewTicketService.getCategories(),
-      serviceTypes: this.OvhApiSupport.v6().getServiceTypes().$promise,
-    }).then(({ categories, serviceTypes }) => {
-      this.categories = categories;
-      this.serviceTypes = serviceTypes.map(({ name, route }) => ({
-        name,
-        route,
-        label: this.$translate.instant(`ovhManagerSupport_new_serviceType_${name}`),
-      }));
-      this.serviceTypes = orderBy(this.serviceTypes, [type => (type.label || '').toLowerCase()]);
+    this.bindings = {
+      category: {
+        isAvailable: false,
+      },
+      serviceType: {
+        exists: false,
+        isAvailable: false,
+      },
+    };
 
-      if (this.serviceTypes && this.defaultServiceTypeName) {
-        this.defaultServiceType = this.findServiceByName(this.defaultServiceTypeName);
-        this.serviceType = this.defaultServiceType;
+    return this.getInitialData();
+  }
 
-        this.updateIssueParamsPartially({
-          serviceType: this.serviceType,
-        });
+  getInitialData() {
+    return this.$q
+      .all({
+        categories: this.getCategories(),
+        serviceTypes: this.props.serviceTypeName ? this.getServiceTypes() : undefined,
+      })
+      . then(({ serviceTypes }) => {
+        this.bindings.serviceType.value = serviceTypes
+          .find(serviceType => [serviceType.name, serviceType.label]
+            .includes(this.props.serviceTypeName));
 
-        return this.fetchServices();
-      }
-
-      return null;
-    })
-      .finally(() => {
-        this.isLoading = false;
+        if (isObject(this.bindings.serviceType.value)) {
+          this.bindings.serviceType.exists = true;
+        }
       });
   }
 
-  get guides() {
-    return filter(get(this.issue, 'selfCareResources'), { type: 'guide' });
+  getCategories() {
+    this.bindings.category.isAvailable = false;
+
+    return this.SupportNewTicketService
+      .getCategories()
+      .then((categories) => {
+        this.bindings.category.isAvailable = true;
+        this.bindings.category.values = categories;
+
+        return this.bindings.category.values;
+      });
   }
 
-  get tips() {
-    return filter(get(this.issue, 'selfCareResources'), { type: 'tip' });
-  }
+  getServiceTypes() {
+    this.bindings.serviceType.isAvailable = false;
 
-  findServiceByName(name) {
-    return this.serviceTypes
-      .find(type => type.name.toLowerCase() === name);
+    return this.OvhApiSupport.v6()
+      .getServiceTypes().$promise
+      .then((serviceTypes) => {
+        this.bindings.serviceType.isAvailable = true;
+        this.bindings.serviceType.values = [...serviceTypes]
+          .map(serviceType => ({
+            ...serviceType,
+            label: this.$translate.instant(`ovhManagerSupport_new_serviceType_${serviceType.name}`),
+          }))
+          .sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+
+        return this.bindings.serviceType.values;
+      });
   }
 
   onCategoryChange() {
-    if (!this.defaultServiceType && !this.serviceName) {
-      this.serviceType = null;
-      this.currentServiceName = null;
-      this.isUnknownService = false;
-      this.issue = null;
+    this.bindings.serviceType.exists = isObject(this.bindings.category.value);
+
+    if (!isArray(this.bindings.serviceType.values)) {
+      return this.getServiceTypes();
     }
 
-    this.updateIssueParamsPartially({
-      category: this.category,
-    });
-  }
-
-  onServiceTypeChange() {
-    this.defaultServiceTypeName = null;
-    this.defaultServiceType = null;
-    this.serviceName = null;
-    this.currentServiceName = null;
-    this.isUnknownService = false;
-    this.issue = null;
-    this.updateIssueParamsPartially({
-      serviceType: this.serviceType,
-    });
-
-    return this.fetchServices();
-  }
-
-  updateIssueParamsPartially({ category, serviceType }) {
-    this.issueParams = {
-      category: category
-        || this.issueParams.category,
-      serviceType: serviceType
-        || this.issueParams.serviceType
-        || this.defaultServiceType,
-    };
-  }
-
-  onServiceChange() {
-    this.serviceName = null;
-    if (this.currentServiceName) {
-      this.isUnknownService = false;
-    }
-  }
-
-  onUnknownServiceChange() {
-    const checked = !this.isUnknownService; // on change is triggered before changes
-    if (checked) {
-      this.currentServiceName = null;
-    }
-    this.issue = null;
-  }
-
-  fetchServices() {
-    if (!this.serviceType) return this.$q.when();
-    this.isUnknownService = false;
-    this.services = null;
-    this.issue = null;
-    return this.OvhApiService.Aapi().query({
-      type: this.serviceType.route,
-      external: false,
-    }).$promise.then((items) => {
-      this.services = items;
-
-      if (this.defaultServiceType != null) {
-        const inputService = this.services
-          .find(service => service.serviceName === this.serviceName
-              || service.displayName === this.serviceName);
-
-        if (inputService == null) {
-          this.serviceName = null;
-          this.currentServiceName = null;
-        } else {
-          this.currentServiceName = inputService.displayName;
-        }
-      }
-    });
-  }
-
-  isIssuesSelectorReady() {
-    return this.issueParams.category
-      && this.category
-      && (
-        this.category.id === this.CATEGORY_ACCOUNT
-        || (
-          this.serviceType && (this.isUnknownService || this.currentServiceName)
-        )
-      );
-  }
-
-  submitForm(isSuccess) {
-    this.atInternet.trackClick({
-      name: `answer-finding-${isSuccess ? 'yes' : 'no'}`,
-      type: 'action',
-    });
-    this.onSubmit({
-      result: {
-        isSuccess,
-        issue: this.issue,
-        category: this.category,
-        serviceType: this.serviceType,
-        service: this.currentServiceName,
-      },
-    });
+    return this.$q.when();
   }
 }
