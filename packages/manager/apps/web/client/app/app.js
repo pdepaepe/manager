@@ -43,6 +43,7 @@ import orderContracts from './components/order-contracts';
 import orderPaymentMeans from './components/order-payment-means';
 import orderService from './components/order-service/order-service.service';
 
+import domain from './domain';
 import domainEmailObfuscation from './domain/email-obfuscation/index';
 import domainOptin from './domain/optin/index';
 import domainZoneActivation from './domain/general-informations/activateZone/activate.module';
@@ -107,6 +108,7 @@ angular
     office,
     sharepoint,
     'Module.emailpro',
+    domain,
     domainDnsZone,
     domainEmailObfuscation,
     domainZoneActivation,
