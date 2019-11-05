@@ -232,8 +232,7 @@
                     <span data-translate="billing_autorenew_service_pay_debt"></span>
                 </oui-action-menu-item>
 
-                <div data-ng-if="!$row.hasParticularRenew() && !$row.hasPendingResiliation() && !$row.hasDebt()">
-
+                <div data-ng-if="!$row.renewIsParticular && !$row.hasPendingResiliation() && !$row.hasDebt()">
                     <!-- Service in autorenew -->
                     <oui-action-menu-item
                         data-ng-if="!$row.isOneShot() && !$row.hasForcedRenew() && !$row.hasEngagement() && !$row.isResiliated()"
@@ -241,7 +240,7 @@
                         <span data-translate="billing_autorenew_service_update_button_caption"></span>
                     </oui-action-menu-item>
                     <oui-action-menu-item
-                        data-ng-if="!$row.isOneShot() && !$row.hasManualRenew()"
+                        data-ng-if="$row.canAnticipateRenew()"
                         data-href="{{:: $ctrl.BillingAutoRenew.constructor.getRenewUrl($row.serviceId, $ctrl.currentUser.ovhSubsidiary) }}"
                         data-external="">
                         <span data-translate="billing_autorenew_service_anticipate_renew"></span>
@@ -253,7 +252,6 @@
                         <span data-translate="billing_autorenew_service_resiliate_button"></span>
                     </oui-action-menu-item>
                     <!-- /Service in autorenew -->
-
 
                     <!-- Service in manual renew  -->
                     <oui-action-menu-item
@@ -268,7 +266,7 @@
                 </div>
 
                 <!-- Exchange -->
-                <div data-ng-if="$row.serviceType === 'EXCHANGE'">
+                <div data-ng-if="$row.serviceType === 'EXCHANGE' && $row.renewIsParticular">
                     <oui-action-menu-item
                         data-on-click="$ctrl.updateExchangeBilling($row)">
                         <span data-translate="billing_autorenew_service_update_exchange_button_caption"></span>
@@ -276,9 +274,16 @@
                     <oui-action-menu-item
                         data-ng-if="!$row.shouldDeleteAtExpiration()"
                         data-disabled="!$row.canBeResiliated()"
-                        data-href="{{ $ctrl.BillingAutoRenew.constructor.getExchangeUrl($row, 'resiliate')}}"
-                        data-external>
+                        data-href="{{ $ctrl.BillingAutoRenew.constructor.getExchangeUrl($row, 'resiliate')}}">
+                        <!-- TODO use proper translation "Manage email accounts"-->
                         <span data-translate="billing_autorenew_service_resiliate_button"></span>
+                    </oui-action-menu-item>
+                </div>
+
+                <div data-ng-if="$row.serviceType === 'EXCHANGE' && !$row.renewIsParticular">
+                    <oui-action-menu-item
+                        data-href="{{ $ctrl.BillingAutoRenew.constructor.getExchangeUrl($row, 'ACCOUNT', 'tab') }}">
+                        <span data-translate="billing_autorenew_service_update_button_caption"></span>
                     </oui-action-menu-item>
                 </div>
                 <!-- /Exchange -->

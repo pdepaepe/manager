@@ -1,10 +1,14 @@
 import assign from 'lodash/assign';
+import get from 'lodash/get';
 import head from 'lodash/head';
 import includes from 'lodash/includes';
 import isNull from 'lodash/isNull';
 import snakeCase from 'lodash/snakeCase';
 
-import { DEBT_STATUS } from './billing-service.constants';
+import {
+  CAPACITIES_BY_FEATURE_TYPES,
+  DEBT_STATUS,
+} from './billing-service.constants';
 
 export default class BillingService {
   constructor(service) {
@@ -19,6 +23,16 @@ export default class BillingService {
 
   get formattedExpiration() {
     return this.expirationDate.format('LL');
+  }
+
+  canAnticipateRenew() {
+    return !this.isOneShot()
+      && !this.hasManualRenew()
+      && get(
+        CAPACITIES_BY_FEATURE_TYPES[this.serviceType],
+        'canAnticipateRenew',
+        CAPACITIES_BY_FEATURE_TYPES.default.canAnticipateRenew,
+      );
   }
 
   getRenew() {
@@ -234,10 +248,6 @@ export default class BillingService {
       availability: true,
       reason: 'available',
     };
-  }
-
-  hasParticularRenew() {
-    return ['EXCHANGE', 'SMS', 'EMAIL_DOMAIN'].includes(this.serviceType);
   }
 
   isOneShot() {
