@@ -36,6 +36,7 @@ import ovhPaymentMethod from '@ovh-ux/ng-ovh-payment-method';
 import uiRouter, { RejectType } from '@uirouter/angularjs';
 
 import moduleExchange from '@ovh-ux/manager-exchange';
+import ovhManagerVps from '@ovh-ux/manager-vps';
 import account from './account';
 import config from './config/config';
 import contactsService from './account/contacts/service/contacts-service.module';
@@ -114,6 +115,7 @@ angular
     ovhManagerBanner,
     ovhManagerEnterpriseCloudDatabase,
     ovhManagerNavbar,
+    ovhManagerVps,
     ovhPaymentMethod,
     'pascalprecht.translate',
     preload,
